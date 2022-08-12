@@ -1,0 +1,20 @@
+
+.DS_Store
+# clangd
+.cache
+.clangd
+
+# SwiftPM
+.build
+t
+CMakeFiles
+.atom-build.json
+*.xcworkspace
+*.xcuserstate
+xcuserdata
+DerivedData
+standford.xcodeproj/**
+#============================================================================
+
+/benchmark/scripts/Benchmark_Driverc
+
