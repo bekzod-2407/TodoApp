@@ -10,8 +10,9 @@ import UIKit
 
 class MainViewController: UIViewController {
     
-    var todoItems: [String] = ["A","A","B"]
-    var defaults = UserDefaults.standard
+    var todoItems = [TodoItem]()
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.Plist")
+   
     private lazy var tavleView: UITableView = {
         var view = UITableView()
         view.translatesAutoresizingMaskIntoConstraints = false
@@ -31,11 +32,15 @@ class MainViewController: UIViewController {
         super.viewDidLoad()
         setupSubView()
         createBarButtonItems()
-        if let items  = defaults.array(forKey: "TodoItems") as? [String] {
-            todoItems = items
-        }
+        // user’s home directory // append the given path
+        
+        print(dataFilePath)
+        loadItems()
      }
     private func setupSubView() {
+        let newItem = TodoItem()
+        newItem.title = "adasdasdasd"
+        todoItems.append(newItem)
         navigationItem.title = "TODO APP"
         view.addSubview(tavleView)
         NSLayoutConstraint.activate([
@@ -56,20 +61,43 @@ class MainViewController: UIViewController {
     @objc func addButtonPressed() {
         
         let alert = UIAlertController(title: "Add new Todoey Item", message: "", preferredStyle: .alert)
-        let action = UIAlertAction(title: "Add item", style: .default) { action in
+        let action = UIAlertAction(title: "Add item", style: .default) { [self] action in
+            let newItem = TodoItem()
             guard let text = self.alertTextField.text else {return}
-            self.todoItems.append(text)
-            self.defaults.set(self.todoItems, forKey: "TodoItems")
-            self.tavleView.reloadData()
+            newItem.title = text
+            todoItems.append(newItem)
+            saveItem()
+          
         }
         alert.addTextField { textField in
             textField.placeholder = "Create a new item"
             self.alertTextField = textField
         }
+        self.tavleView.reloadData()
         alert.addAction(action)
         present(alert, animated: true, completion: nil)
+        
     }
-    
+   private func saveItem() {
+        let encoder = PropertyListEncoder()
+        do {
+            let data = try encoder.encode(self.todoItems)
+            try data.write(to: self.dataFilePath! )
+        } catch {
+            print("cannot encode item \(error)")
+        }
+        self.tavleView.reloadData()
+    }
+    private func loadItems() {
+        if let data = try? Data(contentsOf: dataFilePath!) {
+            let decoder = PropertyListDecoder()
+            do {
+                todoItems = try decoder.decode([TodoItem].self, from: data)
+            }catch {
+                print("cannot decode TodoItem \(error.localizedDescription)")
+            }
+        }
+    }
 }
 
 extension MainViewController: UITableViewDelegate, UITableViewDataSource {
@@ -79,18 +107,18 @@ extension MainViewController: UITableViewDelegate, UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         guard let cell = tableView.dequeueReusableCell(withIdentifier: TodoCell.cellName) as? TodoCell else {return UITableViewCell()}
-        cell.nameLabel.text = todoItems[indexPath.row]
+        let item = todoItems[indexPath.row]
+        cell.nameLabel.text = item.title
+        cell.accessoryType = item.IsDone ? .checkmark : .none
+        
         return cell
     }
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
+            todoItems[indexPath.row].IsDone = !todoItems[indexPath.row].IsDone
+        saveItem()
         tableView.deselectRow(at: indexPath, animated: true)
-        if tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark {
-            tableView.cellForRow(at: indexPath)?.accessoryType = .none
-        } else {
-            tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
-        }
-        
+ 
     }
 }
 
