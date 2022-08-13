@@ -7,11 +7,12 @@
 //
 
 import UIKit
-
+import CoreData
 class MainViewController: UIViewController {
     
     var todoItems = [TodoItem]()
     let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.Plist")
+    let contex = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
    
     private lazy var tavleView: UITableView = {
         var view = UITableView()
@@ -35,12 +36,10 @@ class MainViewController: UIViewController {
         // user’s home directory // append the given path
         
         print(dataFilePath)
-        loadItems()
+//        loadItems()
      }
     private func setupSubView() {
-        let newItem = TodoItem()
-        newItem.title = "adasdasdasd"
-        todoItems.append(newItem)
+       
         navigationItem.title = "TODO APP"
         view.addSubview(tavleView)
         NSLayoutConstraint.activate([
@@ -62,9 +61,11 @@ class MainViewController: UIViewController {
         
         let alert = UIAlertController(title: "Add new Todoey Item", message: "", preferredStyle: .alert)
         let action = UIAlertAction(title: "Add item", style: .default) { [self] action in
-            let newItem = TodoItem()
+          
+            let newItem = TodoItem(context: contex)
             guard let text = self.alertTextField.text else {return}
             newItem.title = text
+            newItem.isDone =  false
             todoItems.append(newItem)
             saveItem()
           
@@ -79,25 +80,23 @@ class MainViewController: UIViewController {
         
     }
    private func saveItem() {
-        let encoder = PropertyListEncoder()
         do {
-            let data = try encoder.encode(self.todoItems)
-            try data.write(to: self.dataFilePath! )
+            try contex.save()
         } catch {
-            print("cannot encode item \(error)")
+            print("cannot save item contex error: \(error)")
         }
         self.tavleView.reloadData()
     }
-    private func loadItems() {
-        if let data = try? Data(contentsOf: dataFilePath!) {
-            let decoder = PropertyListDecoder()
-            do {
-                todoItems = try decoder.decode([TodoItem].self, from: data)
-            }catch {
-                print("cannot decode TodoItem \(error.localizedDescription)")
-            }
-        }
-    }
+//    private func loadItems() {
+//        if let data = try? Data(contentsOf: dataFilePath!) {
+//            let decoder = PropertyListDecoder()
+//            do {
+//                todoItems = try decoder.decode([TodoItem].self, from: data)
+//            }catch {
+//                print("cannot decode TodoItem \(error.localizedDescription)")
+//            }
+//        }
+//    }
 }
 
 extension MainViewController: UITableViewDelegate, UITableViewDataSource {
@@ -109,13 +108,13 @@ extension MainViewController: UITableViewDelegate, UITableViewDataSource {
         guard let cell = tableView.dequeueReusableCell(withIdentifier: TodoCell.cellName) as? TodoCell else {return UITableViewCell()}
         let item = todoItems[indexPath.row]
         cell.nameLabel.text = item.title
-        cell.accessoryType = item.IsDone ? .checkmark : .none
-        
+        cell.accessoryType = item.isDone ? .checkmark : .none
+         
         return cell
     }
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-            todoItems[indexPath.row].IsDone = !todoItems[indexPath.row].IsDone
+            todoItems[indexPath.row].isDone = !todoItems[indexPath.row].isDone
         saveItem()
         tableView.deselectRow(at: indexPath, animated: true)
  
